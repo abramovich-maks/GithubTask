@@ -1,6 +1,7 @@
 package com.githubtask;
 
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -15,12 +16,16 @@ class GithubClient {
     }
 
     List<GithubRepositoryResponse> getRepositories(String username) {
-        GithubRepositoryResponse[] response = restClient.get()
-                .uri("/users/{username}/repos", username)
-                .retrieve()
-                .body(GithubRepositoryResponse[].class);
+        try {
+            GithubRepositoryResponse[] response = restClient.get()
+                    .uri("/users/{username}/repos", username)
+                    .retrieve()
+                    .body(GithubRepositoryResponse[].class);
 
-        return response == null ? List.of() : List.of(response);
+            return response == null ? List.of() : List.of(response);
+        } catch (HttpClientErrorException.NotFound ex) {
+            throw new GithubUserNotFoundException(username);
+        }
     }
 
     List<GithubBranchResponse> getBranches(String owner, String repositoryName) {
